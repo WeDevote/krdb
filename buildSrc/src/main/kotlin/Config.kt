@@ -102,7 +102,7 @@ object Versions {
         const val compileSdkVersion = 35
         const val buildToolsVersion = "35.0.0"
         const val buildTools = "8.7.3" // https://maven.google.com/web/index.html?q=gradle#com.android.tools.build:gradle
-        const val ndkVersion = "27.0.12077973"
+        const val ndkVersion = "25.2.9519653"
         const val r8 = "8.7.18" // See https://developer.android.com/build/kotlin-support
     }
     const val androidxBenchmarkPlugin = "1.3.3" // https://maven.google.com/web/index.html#androidx.benchmark:androidx.benchmark.gradle.plugin
