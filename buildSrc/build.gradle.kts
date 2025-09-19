@@ -60,8 +60,6 @@ dependencies {
     implementation(kotlin("gradle-plugin", version = Versions.kotlin))
     implementation("io.github.gradle-nexus:publish-plugin:${Versions.nexusPublishPlugin}")
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:${Versions.detektPlugin}")
-    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.kotlin}")
-    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:${Versions.kotlin}")
     implementation("org.gradle.kotlin:gradle-kotlin-dsl-plugins:5.2.0")
     implementation("org.jetbrains.dokka:dokka-gradle-plugin:${Versions.dokka}")
     implementation("com.android.tools:r8:${Versions.Android.r8}")

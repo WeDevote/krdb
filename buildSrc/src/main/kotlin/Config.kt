@@ -62,8 +62,9 @@ val HOST_OS: OperatingSystem = findHostOs()
 
 object Realm {
     val ciBuild = (System.getenv("CI") != null)
-     const val version = "3.2.8"
-    const val group = "io.github.xilinjia.krdb"
+    // 支持通过 Gradle 属性覆盖版本号和 groupId
+    val version = System.getProperty("realm.kotlin.version") ?: "3.2.8-wedevote"
+    val group = System.getProperty("realm.kotlin.group") ?: "io.github.xilinjia.krdb"
     const val projectUrl = "https://realm.io"
     const val pluginPortalId = "io.github.xilinjia.krdb"
     // Modules has to match ${project.group}:${project.name} to make composite build work

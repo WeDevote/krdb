@@ -94,6 +94,7 @@ class RealmPublishPlugin : Plugin<Project> {
         else {
             configureSubProject(project, signBuild)
             configureTestRepository(project)
+            configureGitHubPackages(project)
         }
     }
 
@@ -181,6 +182,23 @@ class RealmPublishPlugin : Plugin<Project> {
                 this.transitionCheckOptions {
                     maxRetries.set(720) // Retry for 2 hours. Sometimes Maven Central is really slow!
                     delayBetween.set(Duration.ofSeconds(10))
+                }
+            }
+        }
+    }
+
+    private fun configureGitHubPackages(project: Project) {
+        with(project) {
+            extensions.getByType<PublishingExtension>().apply {
+                repositories {
+                    maven {
+                        name = "GitHubPackages"
+                        url = uri("https://maven.pkg.github.com/WeDevote/krdb")
+                        credentials {
+                            username = getPropertyValue(project, "gpr.user", System.getenv("GITHUB_ACTOR"))
+                            password = getPropertyValue(project, "gpr.key", System.getenv("GITHUB_TOKEN"))
+                        }
+                    }
                 }
             }
         }

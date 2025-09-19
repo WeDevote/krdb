@@ -1,3 +1,57 @@
+
+### WeDevote/krdb
+
+This is WeDevote's internal fork of [XilinJia/krdb](https://github.com/XilinJia/krdb). Support ios/macos targets (which XilinJia/krdb not), published to Github Packages.  
+
+GroupId: keep same as `io.github.xilinjia.krdb`  
+Version: add `-wedevote` suffix to XilinJia/krdb versions, e.g. `3.2.8-wedevote`  
+Publish: publish to Github Packages  
+
+#### How to publish
+
+* run git submodule update --init --recursive
+
+* add `gpr.user=your_github_username` to ~/.gradle/gradle.properties
+
+* add `gpr.key=your_github_personal_access_token` to ~/.gradle/gradle.properties
+
+* run ./publish-to-github-packages.sh `your_version-wedevote`
+
+#### How to use
+
+* add `gpr.user=your_github_username` to ~/.gradle/gradle.properties
+
+* add `gpr.key=your_github_personal_access_token` to ~/.gradle/gradle.properties
+
+* in project's settings.gradle.kts, add following content to `pluginManagement -> repositories` section:
+```
+maven {
+    name = "GitHubPackages"
+    url = uri("https://maven.pkg.github.com/WeDevote/krdb")
+    credentials {
+        username = providers.gradleProperty("gpr.user").orNull ?: ""
+        password = providers.gradleProperty("gpr.key").orNull ?: ""
+    }
+}
+```
+
+* in project's build.gradle.kts, add following content to `buildscript -> repositories` section:
+```
+maven {
+    name = "GitHubPackages"
+    url = uri("https://maven.pkg.github.com/WeDevote/krdb")
+    credentials {
+        username = project.findProperty("gpr.user")?.toString() ?: ""
+        password = project.findProperty("gpr.key")?.toString() ?: ""
+    }
+}
+```
+
+* add `-wedevote` suffix to realm version
+
+* other steps is same as [XilinJia/krdb](https://github.com/XilinJia/krdb)
+
+
 ### This is a fork and rebranding of [Realm Kotlin](https://github.com/XilinJia/realm-kotlin) which is a fork of the deprecated [Realm Kotlin](https://github.com/realm/realm-kotlin).  This has been made compatible with Kotlin 2.1+ while updating various dependencies
 
 JVM has been tested to work the same as with builds with Kotlin 2.0.x.  Android, iOS and MacOS has been tested to work.

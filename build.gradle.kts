@@ -44,7 +44,7 @@ releaseMetaDataDir.mkdirs()
 
 fun readAndCacheVersion(): String {
     val constants: String = File("${projectDir.absolutePath}/buildSrc/src/main/kotlin/Config.kt").readText()
-    val regex = "const val version = \"(.*?)\"".toRegex()
+    val regex = "val version = System\\.getProperty\\(\"realm\\.kotlin\\.version\"\\) \\?\\: \"(.*?)\"".toRegex()
     val match: MatchResult = regex.find(constants) ?: throw GradleException("Could not find current Realm version")
     val version: String = match.groups[1]!!.value
     val versionFile = File(releaseMetaDataDir, "version.txt")
@@ -70,8 +70,8 @@ fun copyProperties(action: GradleBuild) {
 }
 
 allprojects {
-   version = Realm.version
-   group = Realm.group
+   version = System.getProperty("realm.kotlin.version") ?: Realm.version
+   group = System.getProperty("realm.kotlin.group") ?: Realm.group
 
    // Define JVM bytecode target for all Kotlin targets
    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile> {
