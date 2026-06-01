@@ -3,8 +3,10 @@
 
 This is WeDevote's internal fork of [XilinJia/krdb](https://github.com/XilinJia/krdb). Support ios/macos targets (which XilinJia/krdb not), published to Github Packages.
 
-GroupId: keep same as `io.github.xilinjia.krdb`
-Version: add `-wedevote` suffix to XilinJia/krdb versions, e.g. `3.2.8-wedevote`
+GroupId: keep same as `io.github.xilinjia.krdb` 
+
+Version: add `-wedevote` suffix to XilinJia/krdb versions, e.g. `3.2.8-wedevote` 
+
 Publish: publish to Github Packages
 
 #### How to publish
