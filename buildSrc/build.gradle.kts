@@ -14,11 +14,14 @@
  * limitations under the License.
  */
 
+import org.jetbrains.kotlin.gradle.dsl.KotlinVersion
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
+
 // Add support for precompiled script plugins: https://docs.gradle.org/current/userguide/custom_plugins.html#sec:precompiled_plugins
 plugins {
     `kotlin-dsl`
     `kotlin-dsl-precompiled-script-plugins`
-    kotlin("jvm") version Versions.kotlin
+    // kotlin("jvm") version Versions.kotlin
 }
 
 gradlePlugin {
@@ -60,9 +63,20 @@ dependencies {
     implementation(kotlin("gradle-plugin", version = Versions.kotlin))
     implementation("io.github.gradle-nexus:publish-plugin:${Versions.nexusPublishPlugin}")
     implementation("io.gitlab.arturbosch.detekt:detekt-gradle-plugin:${Versions.detektPlugin}")
-    implementation("org.gradle.kotlin:gradle-kotlin-dsl-plugins:5.2.0")
+    implementation("org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.kotlin}")
+    implementation("org.jetbrains.kotlin:kotlin-compiler-embeddable:${Versions.kotlin}")
+    implementation("org.gradle.kotlin:gradle-kotlin-dsl-plugins:${Versions.kotlinDSLPluging}")
     implementation("org.jetbrains.dokka:dokka-gradle-plugin:${Versions.dokka}")
     implementation("com.android.tools:r8:${Versions.Android.r8}")
     implementation("com.android.tools.build:gradle:${Versions.Android.buildTools}")
     implementation(kotlin("script-runtime"))
+}
+
+tasks.withType<KotlinCompile>().configureEach {
+    compilerOptions {
+        val currentKotlinVersion = KotlinVersion.fromVersion(Versions.kotlin.substringBeforeLast("."))
+        languageVersion.set(currentKotlinVersion)
+        apiVersion.set(currentKotlinVersion)
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(Versions.kotlinJvmTarget))
+    }
 }

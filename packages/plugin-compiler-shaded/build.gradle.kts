@@ -19,7 +19,8 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 plugins {
     kotlin("jvm")
     `java`
-    id("com.github.johnrengelman.shadow") version Versions.shadowJar
+//    id("com.github.johnrengelman.shadow") version Versions.shadowJar
+    id("com.gradleup.shadow") version Versions.shadowJar
     id("realm-publisher")
 }
 
@@ -32,7 +33,7 @@ val mavenPublicationName = "compilerPluginShaded"
 tasks {
     named<ShadowJar>("shadowJar") {
         archiveClassifier.set("")
-        this.destinationDirectory.set(file("$buildDir/libs"))
+        this.destinationDirectory.set(layout.buildDirectory.dir("libs"))
     }
 }
 tasks {
@@ -64,7 +65,7 @@ publishing {
     publications {
         register<MavenPublication>(mavenPublicationName) {
             artifactId = Realm.compilerPluginIdNative
-            project.shadow.component(this)
+            from(components["shadow"])
             artifact(tasks.named("sourcesJar"))
             artifact(tasks.named("javadocJar"))
         }

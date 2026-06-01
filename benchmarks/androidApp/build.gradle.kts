@@ -1,3 +1,5 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget // 1. Add this import at the top
+
 plugins {
     id("com.android.library")
     id("androidx.benchmark")
@@ -14,15 +16,10 @@ android {
         targetCompatibility = Versions.targetCompatibilityVersion
     }
 
-    kotlinOptions {
-        jvmTarget = Versions.kotlinJvmTarget
-    }
-
     defaultConfig {
         // Use minSdk = 32 because minSdk = 33 is throwing build time warnings saying it isn't supported,
         // also we want to test performance against the latest release rather than the oldest.
         minSdk = 32
-        targetSdk = Versions.Android.targetSdk
         testInstrumentationRunner = "androidx.benchmark.junit4.AndroidBenchmarkRunner"
         testInstrumentationRunnerArguments["androidx.benchmark.suppressErrors"] = "EMULATOR,UNLOCKED"
         // Disable profiling. See https://developer.android.com/studio/profile/microbenchmark-profile
@@ -44,10 +41,18 @@ android {
             isDefault = true
         }
     }
+    testOptions {
+        targetSdk = Versions.Android.targetSdk
+    }
+}
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(Versions.kotlinJvmTarget))
+    }
 }
 
 dependencies {
-//    androidTestImplementation("io.github.xilinjia.krdb:library-sync:${Realm.version}")
     androidTestImplementation("androidx.test:runner:${Versions.androidxTest}")
     androidTestImplementation("androidx.test.ext:junit:${Versions.androidxJunit}")
     androidTestImplementation("junit:junit:${Versions.junit}")

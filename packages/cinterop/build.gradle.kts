@@ -18,6 +18,12 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
 import java.io.ByteArrayOutputStream
 import java.nio.charset.Charset
+import java.util.Locale
+import org.gradle.api.Task
+import org.gradle.process.ExecOperations
+import org.gradle.kotlin.dsl.newInstance
+import java.io.File
+import javax.inject.Inject
 
 plugins {
     id("org.jetbrains.kotlin.multiplatform")
@@ -373,6 +379,27 @@ android {
         // Out externalNativeBuild (outside defaultConfig) does not seem to have correct type for setting cmake arguments
         externalNativeBuild {
             cmake {
+                // val ninjaPath = try {
+                //     val isWindows = System.getProperty("os.name").contains("Windows", ignoreCase = true)
+                //     val command = if (isWindows) "where" else "which"
+                //     providers.exec {
+                //         commandLine(command, "ninja")
+                //     }.standardOutput.asText.get().trim().split("\n").first()
+                // } catch (e: Exception) {
+                //     "ninja" // Fallback to system path if detection fails
+                // }
+                val ninjaPath = try {
+                    val isWindows = System.getProperty("os.name").contains("Windows", ignoreCase = true)
+                    val command = if (isWindows) "where" else "which"
+                    providers.exec { commandLine(command, "ninja") }
+                        .standardOutput.asText.get()
+                        .trim()
+                        .split(System.lineSeparator())
+                        .first()
+                } catch (e: Exception) {
+                    "ninja" // Final fallback
+                }
+                arguments("-DCMAKE_MAKE_PROGRAM=$ninjaPath")
                 if (!HOST_OS.isWindows()) {
                     // CCache is not officially supported on Windows and there are problems
                     // using it with the Android NDK. So disable for now.
@@ -493,7 +520,7 @@ val copyJVMSharedLibs: TaskProvider<Task> by tasks.registering {
         val archs = (project.property("realm.kotlin.copyNativeJvmLibs") as String)
             .split(",")
             .map { it.trim() }
-            .map { it.toLowerCase() }
+            .map { it.lowercase(Locale.getDefault()) }
 
         archs.forEach { arch ->
             when(arch) {
@@ -551,34 +578,87 @@ fun getSharedCMakeFlags(buildType: BuildType, ccache: Boolean = true): Array<Str
 }
 
 // JVM native libs are currently always built in Release mode.
+//fun Task.buildSharedLibrariesForJVMMacOs() {
+//    group = "Build"
+//    description = "Compile dynamic libraries loaded by the JVM fat jar for supported platforms."
+//    val directory = "$buildDir/realmMacOsBuild"
+//
+//    doLast {
+//        exec {
+//            commandLine("mkdir", "-p", directory)
+//        }
+//        exec {
+//            workingDir(project.file(directory))
+//            commandLine(
+//                "cmake",
+//                *getSharedCMakeFlags(BuildType.RELEASE),
+//                "-DCPACK_PACKAGE_DIRECTORY=..",
+//                "-DCMAKE_OSX_ARCHITECTURES=x86_64;arm64",
+//                project.file("src/jvm/")
+//            )
+//        }
+//        exec {
+//            workingDir(project.file(directory))
+//            commandLine("cmake", "--build", ".", "-j8")
+//        }
+//
+//        // copy files (macos)
+//        exec {
+//            commandLine("mkdir", "-p", project.file("$jvmJniPath/macos"))
+//        }
+//        File("$directory/librealmc.dylib")
+//            .copyTo(project.file("$jvmJniPath/macos/librealmc.dylib"), overwrite = true)
+//    }
+//
+//    inputs.dir(project.file("src/jvm"))
+//    inputs.dir(project.file("$absoluteCorePath/src"))
+//    outputs.file(project.file("$jvmJniPath/macos/librealmc.dylib"))
+//}
+
 fun Task.buildSharedLibrariesForJVMMacOs() {
     group = "Build"
     description = "Compile dynamic libraries loaded by the JVM fat jar for supported platforms."
     val directory = "$buildDir/realmMacOsBuild"
 
+    // Get the injected ExecOperations instance
+    val injectedExecOps = project.objects.newInstance<ExecOpsProvider>()
+
     doLast {
-        exec {
+        // --- Command 1: mkdir -p (Replaces exec { commandLine("mkdir", "-p", directory) }) ---
+        // Note: File(directory).mkdirs() could also replace this if 'mkdir -p' is only for directory creation.
+        injectedExecOps.execOps.exec {
             commandLine("mkdir", "-p", directory)
         }
-        exec {
-            workingDir(project.file(directory))
+
+        // --- Command 2: cmake (Configuration) ---
+        injectedExecOps.execOps.exec {
+            workingDir = project.file(directory)
+
+            // Apply the same fix for getSharedCMakeFlags array spreading
+            val cmakeFlags: Array<String> = (getSharedCMakeFlags(BuildType.RELEASE) as? Array<String>)
+                ?: emptyArray()
+
             commandLine(
                 "cmake",
-                *getSharedCMakeFlags(BuildType.RELEASE),
+                *cmakeFlags,
                 "-DCPACK_PACKAGE_DIRECTORY=..",
                 "-DCMAKE_OSX_ARCHITECTURES=arm64",
                 project.file("src/jvm/")
             )
         }
-        exec {
-            workingDir(project.file(directory))
+
+        // --- Command 3: cmake --build ---
+        injectedExecOps.execOps.exec {
+            workingDir = project.file(directory)
             commandLine("cmake", "--build", ".", "-j8")
         }
 
         // copy files (macos)
-        exec {
+        // --- Command 4: mkdir -p for destination (Replaces exec { commandLine(...) }) ---
+        injectedExecOps.execOps.exec {
             commandLine("mkdir", "-p", project.file("$jvmJniPath/macos"))
         }
+
         File("$directory/librealmc.dylib")
             .copyTo(project.file("$jvmJniPath/macos/librealmc.dylib"), overwrite = true)
     }
@@ -593,12 +673,18 @@ fun Task.buildSharedLibrariesForJVMLinux() {
     description = "Compile dynamic libraries loaded by the JVM fat jar for supported platforms."
     val directory = "$buildDir/realmLinuxBuild"
 
+    val injectedExecOps = project.objects.newInstance<ExecOpsProvider>()
+
     doLast {
-        exec {
-            commandLine("mkdir", "-p", directory)
-        }
-        exec {
-            workingDir(project.file(directory))
+        val buildDir = project.file(directory)
+        val targetDir = project.file("$jvmJniPath/linux")
+
+        buildDir.mkdirs()
+        targetDir.mkdirs()
+
+        // 2. Run CMake Configure
+        injectedExecOps.execOps.exec {
+            workingDir = buildDir
             commandLine(
                 "cmake",
                 *getSharedCMakeFlags(BuildType.RELEASE),
@@ -606,17 +692,20 @@ fun Task.buildSharedLibrariesForJVMLinux() {
                 project.file("src/jvm/")
             )
         }
-        exec {
-            workingDir(project.file(directory))
-            commandLine("cmake", "--build", ".", "-j8")
+
+        // 3. Build (Using --parallel is safer than -j8 on 2-core runners)
+        injectedExecOps.execOps.exec {
+            workingDir = buildDir
+            commandLine("cmake", "--build", ".", "--parallel")
         }
 
-        // copy files (macos)
-        exec {
-            commandLine("mkdir", "-p", project.file("$jvmJniPath/linux"))
+        // 4. Copy the shared object
+        val sourceSo = File(buildDir, "librealmc.so")
+        if (sourceSo.exists()) {
+            sourceSo.copyTo(File(targetDir, "librealmc.so"), overwrite = true)
+        } else {
+            throw GradleException("Build failed: librealmc.so not found at ${sourceSo.absolutePath}")
         }
-        File("$directory/librealmc.so")
-            .copyTo(project.file("$jvmJniPath/linux/librealmc.so"), overwrite = true)
     }
 
     inputs.dir(project.file("src/jvm"))
@@ -624,46 +713,79 @@ fun Task.buildSharedLibrariesForJVMLinux() {
     outputs.file(project.file("$jvmJniPath/linux/librealmc.so"))
 }
 
+// 1. Define an interface to allow Gradle to inject the ExecOperations service.
+// This is the required mechanism for running external processes inside non-Exec tasks.
+interface ExecOpsProvider {
+    @get:Inject
+    val execOps: ExecOperations
+}
+
 fun Task.buildSharedLibrariesForJVMWindows() {
     group = "Build"
     description = "Compile dynamic libraries loaded by the JVM fat jar for supported platforms."
+
+    // These variables/functions (currentVersion, jvmJniPath, etc.)
+    // are now expected to be defined in the outer scope of the build script.
+
     val directory = "$buildDir/realmWindowsBuild"
 
+    // Get the injected ExecOperations instance
+    val injectedExecOps = project.objects.newInstance<ExecOpsProvider>()
+
+    // Use an action block to execute the code
     doLast {
-        file(directory).mkdirs()
-        exec {
-            workingDir(project.file(directory))
+        // Use injectedExecOps.execOps.exec to run the commands
+
+        File(directory).mkdirs()
+
+        // --- First CMake command (Configuration) ---
+        injectedExecOps.execOps.exec {
+            workingDir = project.file(directory)
+
+            // FIX: Explicitly cast the result of getSharedCMakeFlags to Array<String> (as suggested by the error)
+            // and use the Elvis operator to ensure it is not null (falling back to an empty array).
+            // This fixes 'Type mismatch', 'Unresolved reference toTypedArray', and 'Cannot infer type'.
+            val cmakeFlags: Array<String> = (getSharedCMakeFlags(BuildType.RELEASE, ccache = false) as? Array<String>)
+                ?: emptyArray()
+
             commandLine(
                 "cmake",
-                *getSharedCMakeFlags(BuildType.RELEASE, ccache = false),
+                *cmakeFlags, // Spread operator works directly on Array<String>, no .toTypedArray() needed.
                 "-DCMAKE_GENERATOR_PLATFORM=x64",
                 "-DCMAKE_SYSTEM_VERSION=8.1",
                 "-DVCPKG_TARGET_TRIPLET=x64-windows-static",
                 project.file("src/jvm/")
             )
         }
-        exec {
-            workingDir(project.file(directory))
+
+        // --- Second CMake command (Build) ---
+        injectedExecOps.execOps.exec {
+            workingDir = project.file(directory)
             commandLine("cmake", "--build", ".", "--config", "Release")
         }
 
         // copy files (Windows)
+        // Assuming 'jvmJniPath' is available in the script's scope
         project.file("$jvmJniPath/windows").mkdirs()
         File("$directory/Release/realmc.dll")
             .copyTo(project.file("$jvmJniPath/windows/realmc.dll"), overwrite = true)
     }
 
+    // Task inputs and outputs should be declared using Provider API for best practice
+    // Assuming 'absoluteCorePath' and 'jvmJniPath' are available in the script's scope
     inputs.dir(project.file("$absoluteCorePath/src"))
     outputs.file(project.file("$jvmJniPath/windows/realmc.dll"))
 }
 
 fun Task.build_C_API_Macos_Universal(buildVariant: BuildType) {
     val directory = "$absoluteCorePath/build-macos_universal${buildVariant.buildDirSuffix}"
+    val injectedExecOps = project.objects.newInstance<ExecOpsProvider>()
+
     doLast {
-        exec {
+        injectedExecOps.execOps.exec {
             commandLine("mkdir", "-p", directory)
         }
-        exec {
+        injectedExecOps.execOps.exec {
             // See https://github.com/realm/realm-core/blob/master/tools/build-cocoa.sh#L47
             // for source of these arguments.
             workingDir(project.file(directory))
@@ -680,7 +802,7 @@ fun Task.build_C_API_Macos_Universal(buildVariant: BuildType) {
                 ".."
             )
         }
-        exec {
+        injectedExecOps.execOps.exec {
             workingDir(project.file(directory))
             commandLine(
                 "xcodebuild",
@@ -705,12 +827,14 @@ fun Task.build_C_API_Macos_Universal(buildVariant: BuildType) {
 
 fun Task.build_C_API_Simulator(arch: String, buildType: BuildType) {
     val directory = "$absoluteCorePath/build-simulator-$arch${buildType.buildDirSuffix}"
+    val injectedExecOps = project.objects.newInstance<ExecOpsProvider>()
+
     doLast {
-        exec {
+        injectedExecOps.execOps.exec {
             workingDir(project.file(absoluteCorePath))
             commandLine("mkdir", "-p", directory)
         }
-        exec {
+        injectedExecOps.execOps.exec {
             workingDir(project.file(directory))
             commandLine(
                 "cmake", "-DCMAKE_TOOLCHAIN_FILE=$absoluteCorePath/tools/cmake/xcode.toolchain.cmake",
@@ -721,7 +845,7 @@ fun Task.build_C_API_Simulator(arch: String, buildType: BuildType) {
                 ".."
             )
         }
-        exec {
+        injectedExecOps.execOps.exec {
             workingDir(project.file(directory))
             commandLine(
                 "xcodebuild",
@@ -747,11 +871,13 @@ fun Task.build_C_API_Simulator(arch: String, buildType: BuildType) {
 
 fun Task.build_C_API_iOS_Arm64(buildType: BuildType) {
     val directory = "$absoluteCorePath/build-capi_ios_Arm64${buildType.buildDirSuffix}"
+    val injectedExecOps = project.objects.newInstance<ExecOpsProvider>()
+
     doLast {
-        exec {
+        injectedExecOps.execOps.exec {
             commandLine("mkdir", "-p", directory)
         }
-        exec {
+        injectedExecOps.execOps.exec {
             workingDir(project.file(directory))
             commandLine(
                 "cmake", "-DCMAKE_TOOLCHAIN_FILE=$absoluteCorePath/tools/cmake/xcode.toolchain.cmake",
@@ -762,7 +888,7 @@ fun Task.build_C_API_iOS_Arm64(buildType: BuildType) {
                 ".."
             )
         }
-        exec {
+        injectedExecOps.execOps.exec {
             workingDir(project.file(directory))
             commandLine(
                 "xcodebuild",

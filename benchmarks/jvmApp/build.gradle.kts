@@ -1,12 +1,12 @@
 plugins {
     java
+    kotlin("jvm") // This is what makes the 'kotlin { }' block work
     id("me.champeau.jmh") version Versions.jmhPlugin
 }
 apply(plugin = "kotlin")
 
 dependencies {
     jmh(project(":shared"))
-//    jmh("io.github.xilinjia.krdb:library-sync:${Realm.version}")
     jmh("org.openjdk.jmh:jmh-core:${Versions.jmh}")
     jmh("org.openjdk.jmh:jmh-generator-annprocess:${Versions.jmh}")
 }
@@ -19,6 +19,12 @@ jmh {
     resultsFile.set(file("build/reports/benchmarks.json"))
 }
 
-tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-    kotlinOptions.jvmTarget = "1.8"
+// tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+//     kotlinOptions.jvmTarget = Versions.kotlinJvmTarget
+// }
+
+kotlin {
+    compilerOptions {
+        jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.fromTarget(Versions.kotlinJvmTarget))
+    }
 }

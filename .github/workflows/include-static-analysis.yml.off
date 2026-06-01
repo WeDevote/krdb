@@ -1,0 +1,105 @@
+name: Static Analysis
+
+on:
+  workflow_call:
+
+jobs:
+  ktlint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: Register problem matchers
+        run: |-
+          echo "::add-matcher::.github/problem-matchers/ktlint.json"
+
+      - name: Setup Gradle and task/dependency caching
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: false # TODO How to configure caching here?
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2.0.2
+        with:
+          cmake-version: ${{ vars.VERSION_CMAKE }}
+
+      - name: Build Gradle Plugin
+        working-directory: .
+        run: ./gradlew :packages:gradle-plugin:publishAllPublicationsToTestRepository --info --stacktrace
+
+      - name: Run Ktlint
+        run: ./gradlew ktlintCheck
+
+      - name: Stash Ktlint results
+        if: always()
+        run: |
+          rm -rf /tmp/ktlint
+          rm -rf /tmp/detekt
+          mkdir /tmp/ktlint
+          mkdir /tmp/detekt
+          rsync -a --delete --ignore-errors examples/kmm-sample/shared/build/reports/ktlint/ /tmp/ktlint/example/ || true
+          rsync -a --delete --ignore-errors packages/cinterop/build/reports/ktlint/ /tmp/ktlint/cinterop/ || true
+          rsync -a --delete --ignore-errors packages/library-base/build/reports/ktlint/ /tmp/ktlint/library-base/ || true
+          rsync -a --delete --ignore-errors packages/plugin-compiler/build/reports/ktlint/ /tmp/ktlint/plugin-compiler/ || true
+          rsync -a --delete --ignore-errors packages/gradle-plugin/build/reports/ktlint/ /tmp/ktlint/plugin-gradle/ || true
+          rsync -a --delete --ignore-errors benchmarks/build/reports/ktlint/ /tmp/ktlint/benchmarks/ || true
+
+      - name: Publish Ktlint results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Ktlint Analyzer report
+          path: /tmp/ktlint/*
+          retention-days: 1
+
+  detekt:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: "recursive"
+
+      - name: Register problem matchers
+        run: |-
+          echo "::add-matcher::.github/problem-matchers/detekt.json"
+
+      - name: Setup Gradle and task/dependency caching
+        uses: gradle/actions/setup-gradle@v3
+        with:
+          cache-read-only: false # TODO How to configure caching here?
+
+      - name: Setup cmake
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: ${{ vars.VERSION_CMAKE }}
+
+      - name: Build Gradle Plugin
+        working-directory: .
+        run: ./gradlew :packages:gradle-plugin:publishAllPublicationsToTestRepository --info --stacktrace
+
+      - name: Run Detekt
+        run: ./gradlew detekt
+
+      - name: Stash Detekt results
+        if: always()
+        run: |
+          rm -rf /tmp/detekt
+          mkdir /tmp/detekt
+          rsync -a --delete --ignore-errors examples/kmm-sample/shared/build/reports/detekt/ /tmp/detekt/example/ || true
+          rsync -a --delete --ignore-errors packages/cinterop/build/reports/detekt/ /tmp/detekt/cinterop/ || true
+          rsync -a --delete --ignore-errors packages/library-base/build/reports/detekt/ /tmp/detekt/library-base/ || true
+          rsync -a --delete --ignore-errors packages/plugin-compiler/build/reports/detekt/ /tmp/detekt/plugin-compiler/ || true
+          rsync -a --delete --ignore-errors packages/gradle-plugin/build/reports/detekt/ /tmp/detekt/plugin-gradle/ || true
+          rsync -a --delete --ignore-errors benchmarks/build/reports/detekt/ /tmp/detekt/benchmarks/ || true
+
+      - name: Publish Detekt results
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Detekt Analyzer report
+          path: /tmp/detekt/*
+          retention-days: 1

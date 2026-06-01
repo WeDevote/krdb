@@ -1,14 +1,16 @@
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 plugins {
     id("org.jetbrains.kotlin.jvm") apply false
     `java-gradle-plugin`
-    id("realm-lint")
+    // id("realm-lint")
 }
 
 buildscript {
     extra["ciBuild"] = Realm.ciBuild
     repositories {
         if (extra["ciBuild"] as Boolean) {
-            maven("file://${rootProject.rootDir.absolutePath}/../packages/build/m2-buildrepo")
+            maven("file://${rootProject.rootDir.absolutePath}/../build/m2-buildrepo")
         }
         gradlePluginPortal()
         google()
@@ -25,14 +27,20 @@ buildscript {
 allprojects {
     repositories {
         if (rootProject.extra.has("ciBuild") &&  rootProject.extra["ciBuild"] as Boolean) {
-            maven("file://${rootProject.rootDir.absolutePath}/../packages/build/m2-buildrepo")
+            maven("file://${rootProject.rootDir.absolutePath}/../build/m2-buildrepo")
         }
         google()
         mavenCentral()
     }
 
-    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
-        kotlinOptions.jvmTarget = Versions.kotlinJvmTarget
+    // tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile> {
+    //     kotlinOptions.jvmTarget = Versions.kotlinJvmTarget
+    // }
+    tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinCompile>().configureEach {
+        compilerOptions {
+            // 2. Use 'jvmTarget.set()' and the 'JvmTarget' type
+            jvmTarget.set(JvmTarget.fromTarget(Versions.kotlinJvmTarget))
+        }
     }
 }
 

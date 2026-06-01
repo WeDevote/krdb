@@ -104,7 +104,7 @@ class RealmPublishPlugin : Plugin<Project> {
         val password: String = getPropertyValue(project, "signPasswordKotlin")
 
         with(project) {
-            plugins.apply(SigningPlugin::class.java)
+            if (signBuild) plugins.apply(SigningPlugin::class.java)
             plugins.apply(MavenPublishPlugin::class.java)
 
             // Create extension
@@ -195,8 +195,8 @@ class RealmPublishPlugin : Plugin<Project> {
                         name = "GitHubPackages"
                         url = uri("https://maven.pkg.github.com/WeDevote/krdb")
                         credentials {
-                            username = getPropertyValue(project, "gpr.user", System.getenv("GITHUB_ACTOR"))
-                            password = getPropertyValue(project, "gpr.key", System.getenv("GITHUB_TOKEN"))
+                            username = getPropertyValue(project, "gpr.user", System.getenv("GITHUB_ACTOR") ?: "")
+                            password = getPropertyValue(project, "gpr.key", System.getenv("GITHUB_TOKEN") ?: "")
                         }
                     }
                 }

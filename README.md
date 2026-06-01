@@ -1,11 +1,11 @@
 
 ### WeDevote/krdb
 
-This is WeDevote's internal fork of [XilinJia/krdb](https://github.com/XilinJia/krdb). Support ios/macos targets (which XilinJia/krdb not), published to Github Packages.  
+This is WeDevote's internal fork of [XilinJia/krdb](https://github.com/XilinJia/krdb). Support ios/macos targets (which XilinJia/krdb not), published to Github Packages.
 
-GroupId: keep same as `io.github.xilinjia.krdb`  
-Version: add `-wedevote` suffix to XilinJia/krdb versions, e.g. `3.2.8-wedevote`  
-Publish: publish to Github Packages  
+GroupId: keep same as `io.github.xilinjia.krdb`
+Version: add `-wedevote` suffix to XilinJia/krdb versions, e.g. `3.2.8-wedevote`
+Publish: publish to Github Packages
 
 #### How to publish
 
@@ -62,7 +62,21 @@ Project structure is changed to make Intellij IDE work.  gradlew needs to be run
 
 Testing are performed on the dev versions. Maven artifacts can be published (tested locally), but can not be tested upon yet.
 
+### Since 3.2.10, realm-core is linked to https://github.com/XilinJia/realm-core for newer C++ compilers
+
+### Since 3.3.0, Realm entities are **no longer** allowed to be serializable.
+
+### Since 3.3.1, all platforms run through tests and are published to Maven Central
+
 ### Version compatibility
+
+krdb 3.3.3 <==> Kotlin 2.3.20
+
+krdb 3.3.2 <==> Kotlin 2.3.10
+
+krdb 3.3.0/1 <==> Kotlin 2.3.0
+
+krdb 3.2.9/10 <==> Kotlin 2.2.20
 
 krdb 3.2.8 <==> Kotlin 2.2.0
 
@@ -71,8 +85,6 @@ krdb 3.2.6/7 <==> Kotlin 2.1.20
 krdb 3.2.5 <==> Kotlin 2.1.10
 
 ### Published to Maven Central, how to use:
-
-#### Note, the maven artifacts are built on Linux and lack support for iOS and MacOS, hopefully a github actions can resolve this later
 
 * in project build.gradle, add:
 ```
@@ -111,13 +123,13 @@ with
 
 In addition to the above,
 
-* clone this project with: 
+* clone this project with:
 ```git clone --recursive https://github.com/XilinJia/krdb.git ```
-* build in the project root directory with: 
+* build in the project root directory with:
 ```
 ./gradlew clean
 ./gradlew jvmTest
-./gradlew publishToMavenLocal 
+./gradlew publishToMavenLocal
 ```
 * in Android project, in settings.gradle at the project level, add in the beginning:
 ```

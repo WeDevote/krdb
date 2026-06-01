@@ -19,7 +19,7 @@ buildscript {
     extra["ciBuild"] = Realm.ciBuild
     repositories {
         if (extra["ciBuild"] as Boolean) {
-            maven(url = "file://${rootProject.rootDir.absolutePath}/../../packages/build/m2-buildrepo")
+            maven(url = "file://${rootProject.rootDir.absolutePath}/../../build/m2-buildrepo")
         }
         google()
         mavenCentral()
@@ -29,7 +29,7 @@ buildscript {
         mavenCentral()
     }
     dependencies {
-        classpath ("io.realm:realm-gradle-plugin:10.11.0")
+        // classpath ("io.realm:realm-gradle-plugin:10.11.0")
         classpath ("io.github.xilinjia.krdb:gradle-plugin:${Realm.version}")
     }
 }
@@ -37,7 +37,7 @@ buildscript {
 allprojects {
     repositories {
         if (rootProject.extra["ciBuild"] as Boolean) {
-            maven("file://${rootProject.rootDir.absolutePath}/../../packages/build/m2-buildrepo")
+            maven("file://${rootProject.rootDir.absolutePath}/../../build/m2-buildrepo")
         }
         google()
         mavenCentral()

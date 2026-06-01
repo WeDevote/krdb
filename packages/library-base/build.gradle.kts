@@ -1,6 +1,7 @@
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 import org.jetbrains.kotlin.gradle.tasks.KotlinNativeCompile
+import org.jetbrains.kotlin.konan.target.HostManager
 
 /*
  * Copyright 2020 Realm Inc.
@@ -42,11 +43,14 @@ kotlin {
         // in /packages/build.gradle.kts
         publishLibraryVariants("release")
     }
-    iosX64()
-    iosSimulatorArm64()
-    iosArm64()
-    macosX64()
-    macosArm64()
+
+    if (HostManager.hostIsMac) {
+        iosX64()
+        iosSimulatorArm64()
+        iosArm64()
+        macosX64()
+        macosArm64()
+    }
 
     sourceSets {
         val commonMain by getting {
@@ -84,29 +88,31 @@ kotlin {
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.coroutines}")
             }
         }
-        val nativeDarwin by creating {
-            dependsOn(commonMain)
-        }
-        val nativeMacos by creating {
-            dependsOn(nativeDarwin)
-        }
-        val nativeIos by creating {
-            dependsOn(nativeDarwin)
-        }
-        val macosX64Main by getting {
-            dependsOn(nativeMacos)
-        }
-        val macosArm64Main by getting {
-            dependsOn(nativeMacos)
-        }
-        val iosArm64Main by getting {
-            dependsOn(nativeIos)
-        }
-        val iosSimulatorArm64Main by getting {
-            dependsOn(nativeIos)
-        }
-        val iosX64Main by getting {
-            dependsOn(nativeIos)
+        if (HostManager.hostIsMac) {
+            val nativeDarwin by creating {
+                dependsOn(commonMain)
+            }
+            val nativeMacos by creating {
+                dependsOn(nativeDarwin)
+            }
+            val nativeIos by creating {
+                dependsOn(nativeDarwin)
+            }
+            val macosX64Main by getting {
+                dependsOn(nativeMacos)
+            }
+            val macosArm64Main by getting {
+                dependsOn(nativeMacos)
+            }
+            val iosArm64Main by getting {
+                dependsOn(nativeIos)
+            }
+            val iosSimulatorArm64Main by getting {
+                dependsOn(nativeIos)
+            }
+            val iosX64Main by getting {
+                dependsOn(nativeIos)
+            }
         }
     }
 
@@ -243,11 +249,18 @@ tasks.named("publishKotlinMultiplatformPublicationToMavenLocal") {
     }
 }
 
-tasks.register("dokkaJar", Jar::class) {
-    val dokkaTask = "dokkaHtmlPartial"
+//tasks.register("dokkaJar", Jar::class) {
+//    val dokkaTask = "dokkaHtmlPartial"
+//    dependsOn(dokkaTask)
+//    archiveClassifier.set("dokka")
+//    from(tasks.named(dokkaTask).get().outputs)
+//}
+
+tasks.register<Jar>("dokkaJar") {
+    val dokkaTask = tasks.named("dokkaGeneratePublicationHtml") // or dokkaGenerateHtml
     dependsOn(dokkaTask)
     archiveClassifier.set("dokka")
-    from(tasks.named(dokkaTask).get().outputs)
+    from(dokkaTask.map { it.outputs.files })
 }
 
 val javadocJar by tasks.registering(Jar::class) {

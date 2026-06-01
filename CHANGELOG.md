@@ -1,3 +1,63 @@
+## 3.3.3
+
+* Kotlin upped to 2.3.20
+* some minor updates of dependencies
+
+## 3.3.3.0
+
+* Kotlin upped to 2.3.20
+* some minor updates of dependencies
+
+## 3.3.2
+
+* Kotlin upped to 2.3.10
+* gradle upped to 9.3.1, AGP to 8.13.2
+* various dependencies updates
+
+## 3.3.1
+
+* all platforms are tested and published to maven
+* fixed signing requirement in publish to test
+* corrected reference to build directory
+* removed build for macos-x64
+* Integration tests of gradle72, gradle75, gradle8 and gradle85 are removed,  current is 9.2.1
+* force core version to 14.14.1
+* in resolution, kotlin version set to 2.3.0, atomicfu-gradle-plugin to 0.31.0
+* min Android test version upped to 21, and all Java 1.8 upped to 17
+* amended build.gradle.kts in buildSrc for Kotlin and Java version compatibility
+* Need further investigation:  min version test, benchmark, current integration tests don't launch properly
+
+## 3.3.0
+
+* Kotlin is upped to 2.3.0
+* support for entity serialization is dropped
+  * marking a Realm entity with @Serializable would cause crash
+* tests for serialization is disabled
+* test compile is set to jvmTarget 17
+* replaced -Xjvm-default with -jvm-default
+* migrated Registrar to the new Kotlin API
+* removed bridge functions lowerFromModuleFragment(moduleFragment: IrModuleFragment) used for backward compatibility with Kotlin 1.9
+
+## 3.2.10
+
+* realm-core is now linked to https://github.com/XilinJia/realm-core, which has updates required for build with NDK 29
+* NDK upped to 29
+* gradle upped to 9.2.1
+
+## 3.2.9
+
+* enhanced efficiency by avoid using Kotlin reflection in RealmObject, incorporated the PR from @kzotin
+* updated Kotlin to 2.2.20
+* gradle upped to 9.1.0, gradlePluginPublishPlugin upped to 2.0.0, Android gradle plugin upped to 8.13.0
+* upped kotlinCompileTesting to 0.9.0
+* dokka upped to 2.1.0
+* migrated johnrengelman.shadow to com.gradleup.shadow, and upped to 8.3.6
+* Android SDK upped to 36, and various other dependencies update
+* fixed RealmCompilerSubplugin syntax for gradle < 7
+* in build.gradle, added host check so that ios and macos can be skipped on non-Mac machines
+* replaced jCenter with mavenCentral
+* removed sync packages
+
 ## 3.2.8
 
 * updated Kotlin to 2.2.0
